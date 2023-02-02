@@ -1,0 +1,151 @@
+---
+title: "QTM347 HW1"
+output: html_document
+date: '2022-09-13'
+---
+```{r}
+data = read.csv("export_dataframe_stage2.csv")
+```
+
+```{r}
+ncol(data)
+colnames(data)
+```
+Some weird data at the first glance, max for rain hours and rain inches includes some abnormal data. However, these data probably won't matter much for the indication of water quality.
+```{r}
+max(data$rain_hours, na.rm = TRUE)
+max(data$rain_inches, na.rm = TRUE)
+```
+Some abnormal data in stream column
+```{r}
+unique(data$stream)
+```
+
+Referring to the data entry form from ASS website, the core (also more trusted) measurements should be:  
+- air_temp  (also duplicate column named air_temperature) in Celsius,  
+- water_temp in Celsius,  
+- ph1, ph2 (fields include 1 and 2 in the end means two set of measurement),   
+- DissolvedOxygen1, DissolvedOxygen2 in mg/L or ppm (uncertainty +/- 0.6),  
+- Conductivity in uS/cm.  
+
+Previewing core data specificlly:
+```{r}
+print("air tmep")
+summary(data$air_temp)
+print("water tmep")
+summary(data$water_temp)
+
+print("ph1")
+summary(data$ph1)
+print("ph2")
+summary(data$ph2)
+
+print("dissolve O2  1")
+summary(data$DissolvedOxygen1)
+print("dissolve O2  2")
+summary(data$DissolvedOxygen2)
+
+print("conductivity")
+summary(data$Conductivity)
+```
+air_temp seems good  
+water_temp contains abnormal data   110 degree  
+pH contains abnormal data   17.5   
+  normal range would be 0~14, hydrochloric acid can be -1, sodium hydroxide can be 15  
+Dissovled O2, zero dissolved O2 could be abnormal, can't say with confidence  
+  <!--Check out this on page 2, https://www.enr.gov.nt.ca/sites/enr/files/dissolved_oxygen.pdf-->
+  
+Conductivity, 3rd quantile is lower than 200, need to double check the condition of Georgia water    
+  <!--Check out this file for conductivity, https://www.enr.gov.nt.ca/sites/enr/files/conductivity.pdf-->
+
+Adding some useful fields from existing data:  
+```{r}
+print("temp diff")
+data$temp_diff = data$air_temp - data$water_temp
+summary(data$temp_diff)
+
+print("ph_mean")
+data$ph_mean = (data$ph1 + data$ph2)/2
+summary(data$ph_mean)
+
+print("dissolve O2 mean")
+data$O2_mean = (data$DissolvedOxygen1 + data$DissolvedOxygen2)/2
+summary(data$O2_mean)
+```
+Some temperature diff is abnormal.  
+ph and dissolved O2 yield similar result as previous.  
+
+Some semi-core fields are:  
+SecchiDisk1, SecchiDisk2, cm, measure the visibility of the water  
+ChlorophyIIA, ug/L, could indicate the amount of algae in the   
+Salinity1, Salinity2, ppt, salt in water  
+```{r}
+print("SecchiDisk1")
+summary(data$SecchiDisk1)
+print("SecchiDisk2")
+summary(data$SecchiDisk2)
+print("SecchiDisk_mean")
+data$SecchiDisk_mean = (data$SecchiDisk1 + data$SecchiDisk2)/2
+summary(data$SecchiDisk_mean)
+
+print("CholorophyIIA")
+summary(data$ChlorophyllA)
+
+print("Salinity1")
+summary(data$Salinity1)
+print("Salinity2")
+summary(data$Salinity2)
+
+print("Salinity_mean")
+data$Salinity_mean = (data$Salinity1 + data$Salinity2)/2
+summary(data$Salinity_mean)
+```
+SecchiDisk has some abnormal data  
+  from wiki, deepest lake in Georgia is 48m or 480cm depth  
+  shall not succeed this value  
+CholorophyIIA: unsure  
+  what is common range of this  
+Salinity  
+  Fresh water - Less than 1,000 ppm => 1 ppt  
+  Slightly saline water - From 1,000 ppm to 3,000 ppm => 1 ~ 3 ppt  
+  Moderately saline water - From 3,000 ppm to 10,000 ppm => 3 ~ 10 ppt  
+  Highly saline water - From 10,000 ppm to 35,000 ppm => 10 ~ 35 ppt  
+  By the way, ocean water contains about 35,000 ppm of salt.  
+  <!--From https://www.usgs.gov/special-topics/water-science-school/science/saline-water-and-salinity-->
+  Looks to salted?? Not sure.
+
+Notice that there's both air_temp and air_temperature in the dataset. We could use them to fill out the missing column. The standardize, we merge air temperature to air_temp
+```{r}
+sum(is.na(data$air_temp))
+sum(is.na(data$air_temperature))
+```
+```{r}
+for(i in range(1,nrow(data))){
+  if(is.na(data[i, "air_temp"])){
+    data[i, "air_temp"] = data[i, "air_temperature"]
+  }
+}
+sum(is.na(data$air_temp))
+sum(is.na(data$air_temperature))
+```
+So, we can directly remove air_temperature column
+```{r}
+data = subset(data, select = -air_temperature)
+```
+
+
+Notice that the event date column is not "Date" type
+```{r}
+library(dplyr)
+mutate(data, event_date = as.POSIXct(event_date))
+```
+
+
+Concentrate on recent 10 years' data
+```{r}
+data2 = data[data$event_date > as.POSIXct("2010-01-01 00:00:00"),]
+```
+
+```{r}
+
+```

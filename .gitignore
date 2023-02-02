@@ -116,3 +116,11 @@ dmypy.json
 .pyre/
 
 /responses
+
+#geodata stuff
+/geodata
+
+#dataset
+AAS_Chemical_Data_12202021.xlsx - Sheet1.csv
+export_dataframe_stage1.csv
+export_dataframe_stage2.csv
